@@ -1,0 +1,87 @@
+{
+    "name": "Order Notify",
+    "nodes": [
+        {
+            "id": "1",
+            "name": "Order Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ],
+            "webhookDescription": {
+                "path": "new-order",
+                "httpMethod": "POST",
+                "responseMode": "onReceived",
+                "responseData": "default",
+                "responseCode": 200
+            }
+        },
+        {
+            "id": "2",
+            "name": "Slack Notify",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 2,
+            "position": [
+                700,
+                300
+            ],
+            "parameters": {
+                "resource": "message",
+                "operation": "post",
+                "channel": "#orders",
+                "text": "🎉 *New Order Received!*\nOrder ID: {{$json[\"id\"]}}\nCustomer: {{$json[\"customer_name\"]}}\nTotal: ${{$json[\"total\"]}}"
+            },
+            "credentials": {
+                "slackApi": {
+                    "id": "YOUR_SLACK_CREDENTIAL_ID",
+                    "name": "Slack Account"
+                }
+            }
+        },
+        {
+            "id": "3",
+            "name": "FastAPI Webhook",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                1100,
+                300
+            ],
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.yourshop.com/api/orders/process",
+                "jsonParameters": true,
+                "bodyParametersJson": "{\"order_id\": \"{{$json[\\\"id\\\"]}}\", \"total\": \"{{$json[\\\"total\\\"]}}\"}"
+            }
+        }
+    ],
+    "connections": {
+        "Order Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Notify",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Slack Notify": {
+            "main": [
+                [
+                    {
+                        "node": "FastAPI Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "id": "order-notify-workflow"
+}
