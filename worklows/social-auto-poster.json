@@ -1,179 +1,194 @@
 {
-  "name": "Social Auto Poster (Gemini + Social Media)",
-  "nodes": [
-    {
-      "parameters": {},
-      "id": "1",
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1
-    },
-    {
-      "parameters": {
-        "fields": {
-          "values": [
-            {
-              "name": "product_title",
-              "value": ""
-            },
-            {
-              "name": "product_description",
-              "value": ""
-            },
-            {
-              "name": "image_url",
-              "value": ""
-            },
-            {
-              "name": "publish_at",
-              "value": ""
-            }
-          ]
-        }
-      },
-      "id": "2",
-      "name": "Input Data",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 1
-    },
-    {
-      "parameters": {
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
-        "method": "POST",
-        "authentication": "headerAuth",
-        "headerParametersUi": {
-          "parameter": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "x-goog-api-key",
-              "value": "={{$env.GEMINI_API_KEY}}"
-            }
-          ]
+    "name": "Social Auto Poster (Gemini + Social Media)",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "1",
+            "name": "Manual Trigger",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [250, 300]
         },
-        "bodyParametersJson": "={\n                    \"contents\": [{\n                        \"parts\": [{\n                            \"text\": \"Generate a catchy, structured caption for a product. Include a headline, short creative description, and relevant hashtags with emojis. Product title: {{$json.product_title}}, Description: {{$json.product_description}}\"\n                        }]\n                    }]\n                }"
-      },
-      "id": "3",
-      "name": "Gemini Generate Caption",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1
-    },
-    {
-      "parameters": {
-        "text": "={{$json['candidates'][0]['content']['parts'][0]['text']}}"
-      },
-      "id": "4",
-      "name": "Extract Caption",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 1
-    },
-    {
-      "parameters": {
-        "authentication": "oAuth2",
-        "text": "={{$json.text}}",
-        "additionalFields": {
-          "media": "={{$json.image_url}}"
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "product_title",
+                            "value": ""
+                        },
+                        {
+                            "name": "product_description",
+                            "value": ""
+                        },
+                        {
+                            "name": "image_url",
+                            "value": ""
+                        },
+                        {
+                            "name": "publish_at",
+                            "value": ""
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "2",
+            "name": "Input Data",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [450, 300]
+        },
+        {
+            "parameters": {
+                "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
+                "method": "POST",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "x-goog-api-key",
+                            "value": "={{$env.GEMINI_API_KEY}}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": []
+                },
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Generate a catchy, structured caption for a product. Include a headline, short creative description, and relevant hashtags with emojis. Product title: {{$json.product_title}}, Description: {{$json.product_description}}\"\n    }]\n  }]\n}",
+                "options": {}
+            },
+            "id": "3",
+            "name": "Gemini Generate Caption",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [650, 300]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "text",
+                            "value": "={{$json['candidates'][0]['content']['parts'][0]['text']}}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "4",
+            "name": "Extract Caption",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3,
+            "position": [850, 300]
+        },
+        {
+            "parameters": {
+                "authentication": "oAuth2",
+                "text": "={{$json.text}}",
+                "additionalFields": {
+                    "attachments": "={{$json.image_url}}"
+                }
+            },
+            "id": "5",
+            "name": "Twitter Post",
+            "type": "n8n-nodes-base.twitter",
+            "typeVersion": 2,
+            "position": [1050, 200],
+            "credentials": {
+                "twitterOAuth2Api": {
+                    "id": "1",
+                    "name": "Twitter Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "authentication": "oAuth2",
+                "text": "={{$json.text}}",
+                "additionalFields": {
+                    "link": "={{$json.image_url}}"
+                }
+            },
+            "id": "6",
+            "name": "Facebook Post",
+            "type": "n8n-nodes-base.facebookGraphApi",
+            "typeVersion": 1,
+            "position": [1050, 300],
+            "credentials": {
+                "facebookGraphApi": {
+                    "id": "2",
+                    "name": "Facebook Page"
+                }
+            }
         }
-      },
-      "id": "5",
-      "name": "Twitter Post",
-      "type": "n8n-nodes-base.twitter",
-      "typeVersion": 2,
-      "credentials": {
-        "twitterOAuth2Api": "Twitter Account"
-      }
-    },
-    {
-      "parameters": {
-        "authentication": "oAuth2",
-        "text": "={{$json.text}}",
-        "additionalFields": {
-          "link": "={{$json.image_url}}"
+    ],
+    "connections": {
+        "Manual Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Input Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Input Data": {
+            "main": [
+                [
+                    {
+                        "node": "Gemini Generate Caption",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Gemini Generate Caption": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Caption",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Caption": {
+            "main": [
+                [
+                    {
+                        "node": "Twitter Post",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Facebook Post",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
         }
-      },
-      "id": "6",
-      "name": "Facebook Post",
-      "type": "n8n-nodes-base.facebookGraphApi",
-      "typeVersion": 1,
-      "credentials": {
-        "facebookGraphApi": "Facebook Page"
-      }
     },
-    {
-      "parameters": {
-        "authentication": "oAuth2",
-        "caption": "={{$json.text}}",
-        "imageUrl": "={{$json.image_url}}"
-      },
-      "id": "7",
-      "name": "Instagram Post",
-      "type": "n8n-nodes-base.instagramGraphApi",
-      "typeVersion": 1,
-      "credentials": {
-        "instagramGraphApi": "Instagram Business"
-      }
-    }
-  ],
-  "connections": {
-    "Manual Trigger": {
-      "main": [
-        [
-          {
-            "node": "Input Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
     },
-    "Input Data": {
-      "main": [
-        [
-          {
-            "node": "Gemini Generate Caption",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Gemini Generate Caption": {
-      "main": [
-        [
-          {
-            "node": "Extract Caption",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Caption": {
-      "main": [
-        [
-          {
-            "node": "Twitter Post",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Facebook Post",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Instagram Post",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  }
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2025-01-01T00:00:00.000Z",
+    "versionId": "1"
 }

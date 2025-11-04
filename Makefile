@@ -1,5 +1,3 @@
-# Makefile for ecomflow-n8n
-
 # Start all containers in detached mode
 up:
 	docker-compose up -d
